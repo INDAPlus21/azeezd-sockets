@@ -1,6 +1,6 @@
 # Azeez Daoud - Sockets
 
-This is chat server that uses both Client and Server side in the same application. (Now it's all on localhost. Just change the address under `src/socket_chat/mod.rs`)
+This is chat server that uses both Client and Server side in the same application. (Now it's all on address `localhost:8080`, you can just change the address under `src/socket_chat/mod.rs`)
 
 # Host a server
 To start a server type (while in this directory)
@@ -15,6 +15,7 @@ To join the newly created server as a client, open another terminal or command l
 cargo run <username>
 ```
 where `<username>` is the name you want to have in the chat.
+When you join, you can directly type in the stdin and it would be sent to the server
 
 # Special Commands
 There are a number of commands that you can use in the server
