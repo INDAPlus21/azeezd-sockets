@@ -122,9 +122,9 @@ impl Server {
                             // Acquire client list
                             let mut _clients = match self.clients.lock() {
                                 Ok(val) => val,
-                                Err(_) => {
+                                Err(e) => {
                                     server_log(
-                                        "Error acquiring client list from server".to_string(),
+                                        format!("Error \"{}\" acquiring client list from server", e),
                                         LogMessagType::EncounteredError,
                                     );
                                     continue;
@@ -176,6 +176,7 @@ impl Server {
                                     let mut buffer = [0; 1024];
                                     if let Err(e) = _socket.read(&mut buffer) {
                                         server_log(format!("Error \"{}\" reading from client {}. Closing thread", e, connected.1.to_string()), LogMessagType::EncounteredError);
+                                        _sender.send(format!("{} {} {}", super::request_type::COMMAND, request[4..].to_string(), super::commands::LOGOUT));
                                         break;
                                     }
                                     let request = String::from_utf8_lossy(&mut buffer).to_string();
@@ -209,9 +210,9 @@ impl Server {
         // Acquire client list
         let mut clients = match clients.try_lock() {
             Ok(val) => val,
-            Err(_) => {
+            Err(e) => {
                 server_log(
-                    format!("Error acquiring client list for request \"{}\"", request),
+                    format!("Error \"{}\" while acquiring client list for request \"{}\"", e, request),
                     LogMessagType::EncounteredError,
                 );
                 return;
@@ -240,9 +241,14 @@ impl Server {
                     super::commands::WHISPER => {
                         // Direct messages
                         // Acquire target
-                        let target = message_content
-                            .split_ascii_whitespace()
-                            .nth(1)
+                        let message_tokens : Vec<&str> = message_content.split_ascii_whitespace().collect();
+
+                        if message_tokens.len() < 3 { // Errorenous whisper
+                            return;
+                        }
+
+                        let target = message_tokens
+                            .get(1)
                             .unwrap()
                             .to_string();
                         if let Ok(_) = clients.send_to(
@@ -259,13 +265,10 @@ impl Server {
                     }
                     super::commands::LOGOUT => {
                         // Remove client from server
-                        // Tell the client just in case
-                        clients
-                            .send_to(
-                                &sender.to_string(),
-                                &format!("{}", super::resposne_type::CONNECTION_DENIED),
-                            )
-                            .unwrap();
+                        if let Err(e) = clients.remove(sender.to_string()) {
+                            server_log(format!("Error while removing client {} \"{}\"", sender, e), LogMessagType::EncounteredError);
+                            return;
+                        }
 
                         // Tell other clients
                         clients.send_to_all(&format!(
@@ -273,11 +276,6 @@ impl Server {
                             super::resposne_type::USER_LEFT,
                             sender
                         ));
-
-                        if let Err(e) = clients.remove(sender.to_string()) {
-                            server_log(format!("{}", e), LogMessagType::EncounteredError);
-                            return;
-                        }
                     }
                     _ => {
                         server_log(

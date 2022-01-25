@@ -94,6 +94,9 @@ impl Client {
                     _ => {}
                 }
 
+            if buffer.trim_end().len() == 0 {
+                continue;
+            }
             match self.parse_message(&buffer) {
                 Ok(buffer) => {
                     match self.socket

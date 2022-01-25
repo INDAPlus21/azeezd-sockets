@@ -65,7 +65,7 @@ impl ClientList {
                 .expect("Error sending message to target");
             Ok(())
         } else {
-            Err("Not such client")
+            Err("No such client")
         }
     }
 
