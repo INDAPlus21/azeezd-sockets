@@ -18,5 +18,5 @@ where `<username>` is the name you want to have in the chat.
 
 # Special Commands
 There are a number of commands that you can use in the server
-- `/whisper <target>` to whisper someone in the chat
+- `/w <target>` to whisper someone in the chat
 - `/exit` to disconnect from the server

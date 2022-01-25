@@ -42,7 +42,7 @@ impl ClientList {
 
     /// # `send_to_all`
     /// Send a given message as `String` to all clients in the list
-    pub fn send_to_all(&mut self, message: String) {
+    pub fn send_to_all(&mut self, message: &String) {
         let message = message.as_bytes();
         for client in self.clients.iter_mut() {
             client
@@ -55,7 +55,7 @@ impl ClientList {
     /// # `send_to`
     /// Takes a target client name as `String` and a message as `String` and sends a message to that client.
     /// This returns `Result<(), &str>` where Error is if the user does not exists
-    pub fn send_to(&mut self, target: String, message: String) -> Result<(), &str> {
+    pub fn send_to(&mut self, target: &String, message: &String) -> Result<(), &str> {
         if let Some(id) = self.name_exists(&target) {
             self.clients
                 .get_mut(id)
@@ -71,7 +71,7 @@ impl ClientList {
 
     /// # `remove`
     /// Takes a name as `String` and removes that client from the list.
-    /// This returns `Result<(), &str>` where Error is if the user does not exists
+    /// This returns `Result<(), &str>` where Error is if the user does not exists&
     pub fn remove(&mut self, name: String) -> Result<(), &str> {
         match self.name_exists(&name) {
             Some(idx) => {self.clients.remove(idx); Ok(())},

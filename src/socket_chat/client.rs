@@ -6,6 +6,8 @@ use std::{
 extern crate colored;
 use colored::*;
 
+use super::tools::{client_log, LogMessagType};
+
 /// # `Client`
 /// Structure that handles a client and its communication with the server
 pub struct Client {
@@ -21,14 +23,18 @@ impl Client {
         if let Ok(mut socket) = TcpStream::connect(super::SERVER_ADDRESS) {
             let mut response_buffer = [0; 32];
             // Send join request to server
-            socket
-                .write(format!("CON {}", name).as_bytes())
-                .expect("Unable to initiate communication with server");
+            if let Err(_) = socket
+                .write(format!("CON {}", name).as_bytes()) {
+                    client_log("Error initiating communication with server".to_string(), LogMessagType::EncounteredError);
+                    return None;
+                }
 
             // Read resposne
-            socket
-                .read(&mut response_buffer)
-                .expect("Error while reading from server");
+            if let Err(_) = socket
+                .read(&mut response_buffer) {
+                    client_log("Error reading from server".to_string(), LogMessagType::EncounteredError);
+                    return None;
+                }
 
             let response = String::from_utf8_lossy(&response_buffer)
                 .trim_end_matches('\u{0}') // Remove trailing 0's
@@ -43,11 +49,11 @@ impl Client {
                     })
                 }
                 super::resposne_type::CONNECTION_DENIED => { // Sadge
-                    println!("Connection Denied!");
+                    client_log("Connection Denied".to_string(), LogMessagType::EncounteredError);
                     None
                 }
                 _ => {
-                    println!("An error occured!");
+                    client_log("An unknown error occured".to_string(), LogMessagType::EncounteredError);
                     None
                 }
             }
@@ -59,29 +65,46 @@ impl Client {
     /// # `init`
     /// Initializes the client. This will block until the client is shut down
     pub fn init(&mut self) {
-        let mut socket = self.socket.try_clone().expect("Error acquiring socket.");
+        let mut socket = match self.socket.try_clone() {
+            Ok(val) => val,
+            Err(_) => {
+                client_log("Error cloning client socket".to_string(), LogMessagType::EncounteredError);
+                return;
+            }
+        };
 
         // Spawn response listening and handling thread
         thread::spawn(move || loop {
             let mut buffer = [0; 1024];
-            socket.read(&mut buffer).expect("Error reading from socket");
+            if let Err(_) = socket.read(&mut buffer) {
+                client_log("Error reading from socket".to_string(), LogMessagType::EncounteredError);
+                std::process::exit(0);
+            }
             Self::parse_resposne(&buffer);
         });
 
         // Reads from stdin and send to server
         loop {
             let mut buffer = String::new();
-            std::io::stdin()
-                .read_line(&mut buffer)
-                .expect("Error reading message");
+            match std::io::stdin()
+                .read_line(&mut buffer) {
+                    Err(_) => {
+                        client_log("Error reading from stdin".to_string(), LogMessagType::EncounteredError);
+                    },
+                    _ => {}
+                }
 
             match self.parse_message(&buffer) {
                 Ok(buffer) => {
-                    self.socket
-                        .write(buffer.as_bytes())
-                        .expect("Error sending message.");
+                    match self.socket
+                        .write(buffer.as_bytes()) {
+                            Err(_) => {
+                                client_log("Error sending to server".to_string(), LogMessagType::EncounteredError);
+                            },
+                            _ => {}
+                        }
                 }
-                Err(e) => println!("{}: {}", "ERR".bold().red(), e),
+                Err(e) => client_log(format!("{}", e), LogMessagType::EncounteredError)
             }
         }
     }
@@ -94,6 +117,7 @@ impl Client {
         // Get resposne id (first three characters)
         match &response[..3] {
             super::resposne_type::CONNECTION_DENIED => { // Sadge
+                client_log("You have been disconnected".to_string(), LogMessagType::Information);
                 std::process::exit(0);
             }
             super::resposne_type::PUBLIC_MESSAGE => { // Public message from some other client

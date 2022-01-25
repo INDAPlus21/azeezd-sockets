@@ -27,4 +27,4 @@ pub mod commands {
 /// CHANGE THIS IF YOU WANT ANOTHER HOST ADDRESS!!
 pub const SERVER_ADDRESS: &str = "localhost:8080";
 
-pub use self::{client::Client, server::Server, tools::ClientList};
+pub use self::{client::Client, server::Server, tools::{ClientList, server_log, LogMessagType}};
