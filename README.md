@@ -23,5 +23,5 @@ There are a number of commands that you can use in the server
 - `/exit` to disconnect from the server
 
 # Notes
-- I have tried to protect against all possible states that might lead to one. There *could* be some way as a client to poison some lock somewhere with some action or command (plz dont).
+- There *could* be some way as a client to poison some lock somewhere with some action or command (plz dont). I have tried to protect against all possible states that might lead to one.
 - If a lock poisoning occurs, no one would be able to log into the server until it is restarted. (Available clients will not be able to interact with the server)
